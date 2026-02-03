@@ -3,12 +3,19 @@ set -e
 
 REPO="https://github.com/XMA-Faez/yt-transcriber.git"
 INSTALL_DIR="${YT_TRANSCRIBER_DIR:-$HOME/.yt-transcriber}"
+BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
 
 echo "Installing yt-transcriber..."
 
 if ! command -v bun &> /dev/null; then
-  echo "Bun is required but not installed."
-  echo "Install it with: curl -fsSL https://bun.sh/install | bash"
+  echo "Bun not found. Installing bun..."
+  curl -fsSL https://bun.sh/install | bash
+  export BUN_INSTALL="$BUN_INSTALL"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+fi
+
+if ! command -v git &> /dev/null; then
+  echo "Error: git is required but not installed."
   exit 1
 fi
 
@@ -30,4 +37,8 @@ bun link
 
 echo ""
 echo "yt-transcriber installed successfully!"
-echo "Run 'yt-transcriber --help' to get started."
+echo ""
+echo "If this is a fresh bun install, restart your terminal or run:"
+echo "  source ~/.bashrc  # or ~/.zshrc"
+echo ""
+echo "Then run 'yt-transcriber --help' to get started."
