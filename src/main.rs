@@ -159,6 +159,49 @@ fn parse_vtt_timestamp(ts: &str) -> f64 {
     }
 }
 
+fn deduplicate_segments(segments: Vec<TranscriptSegment>) -> Vec<TranscriptSegment> {
+    if segments.is_empty() {
+        return segments;
+    }
+
+    let mut result: Vec<TranscriptSegment> = Vec::new();
+
+    for seg in segments {
+        if let Some(last) = result.last_mut() {
+            let last_text = last.text.trim();
+            let curr_text = seg.text.trim();
+
+            if curr_text.contains(last_text) {
+                last.text = curr_text.to_string();
+                last.end_seconds = seg.end_seconds;
+                last.duration_seconds = last.end_seconds - last.start_seconds;
+                continue;
+            }
+
+            if last_text.contains(curr_text) {
+                continue;
+            }
+
+            if last_text == curr_text {
+                last.end_seconds = seg.end_seconds;
+                last.duration_seconds = last.end_seconds - last.start_seconds;
+                continue;
+            }
+        }
+
+        result.push(seg);
+    }
+
+    result
+        .into_iter()
+        .enumerate()
+        .map(|(i, mut seg)| {
+            seg.index = i;
+            seg
+        })
+        .collect()
+}
+
 fn parse_vtt(content: &str) -> Vec<TranscriptSegment> {
     let mut segments = Vec::new();
     let timestamp_re = Regex::new(r"(\d{1,2}:\d{2}:\d{2}\.\d{3}|\d{1,2}:\d{2}\.\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}\.\d{3}|\d{1,2}:\d{2}\.\d{3})").unwrap();
@@ -205,7 +248,7 @@ fn parse_vtt(content: &str) -> Vec<TranscriptSegment> {
         }
     }
 
-    segments
+    deduplicate_segments(segments)
 }
 
 fn format_timestamp_bracket(seconds: f64) -> String {
