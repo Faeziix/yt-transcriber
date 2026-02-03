@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2021"
 description = "CLI tool to extract YouTube video transcripts with timestamps"
 license = "MIT"
-repository = "https://github.com/XMA-Faez/yt-transcriber"
+repository = "https://github.com/Faeziix/yt-transcriber"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

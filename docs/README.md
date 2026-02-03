@@ -7,7 +7,7 @@ A CLI tool for extracting YouTube video transcripts with timestamps in multiple 
 ### From source (requires Rust)
 
 ```bash
-git clone https://github.com/XMA-Faez/yt-transcriber.git
+git clone https://github.com/Faeziix/yt-transcriber.git
 cd yt-transcriber
 cargo build --release
 sudo cp target/release/yt-transcriber /usr/local/bin/
@@ -16,7 +16,7 @@ sudo cp target/release/yt-transcriber /usr/local/bin/
 ### One-liner install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/XMA-Faez/yt-transcriber/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Faeziix/yt-transcriber/main/install.sh | bash
 ```
 
 ## Requirements

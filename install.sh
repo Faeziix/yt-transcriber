@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="https://github.com/XMA-Faez/yt-transcriber.git"
+REPO="https://github.com/Faeziix/yt-transcriber.git"
 INSTALL_DIR="${YT_TRANSCRIBER_DIR:-$HOME/.yt-transcriber}"
 
 echo "Installing yt-transcriber..."
