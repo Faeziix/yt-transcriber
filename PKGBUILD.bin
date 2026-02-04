@@ -1,0 +1,33 @@
+# Maintainer: Faezix <faezix@github.com>
+pkgname=yt-transcriber
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="CLI tool to extract YouTube video transcripts with timestamps"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Faeziix/yt-transcriber"
+license=('MIT')
+depends=('yt-dlp')
+makedepends=()
+options=('!debug')
+install=$pkgname.install
+
+_arch="$CARCH"
+if [ "$_arch" = "x86_64" ]; then
+    _arch="x86_64"
+elif [ "$_arch" = "aarch64" ]; then
+    _arch="aarch64"
+fi
+
+source=(
+    "https://github.com/Faeziix/yt-transcriber/releases/download/v${pkgver}/yt-transcriber-linux-${_arch}.tar.gz"
+    "LICENSE::https://raw.githubusercontent.com/Faeziix/yt-transcriber/v${pkgver}/LICENSE"
+)
+sha256sums=('SKIP' 'SKIP')
+
+package() {
+    install -Dm755 "$srcdir/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    if [ -f "$srcdir/LICENSE" ]; then
+        install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    fi
+}

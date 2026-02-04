@@ -1,0 +1,33 @@
+name: Build to test PR
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux]
+        arch: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross
+        run: cargo install cross --locked
+      - name: Clean build artifacts
+        run: cargo clean
+      - name: Build binary with cross
+        run: cross build --release --target ${{ matrix.arch }}-unknown-${{ matrix.os }}-gnu
+      - name: Create tarball
+        run: |
+          mv target/${{ matrix.arch }}-unknown-${{ matrix.os }}-gnu/release/yt-transcriber yt-transcriber
+          tar -czf yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.tar.gz yt-transcriber
+      - name: Generate checksum
+        run: sha256sum yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.tar.gz > yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.sha256
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+            yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.sha256
