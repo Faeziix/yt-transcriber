@@ -7,7 +7,7 @@ use tempfile::TempDir;
 
 #[derive(Parser)]
 #[command(name = "yt-transcriber")]
-#[command(version = "1.0.0")]
+#[command(version)]
 #[command(about = "Extract YouTube video transcripts with timestamps")]
 struct Cli {
     /// YouTube URL or video ID
