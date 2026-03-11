@@ -47,7 +47,25 @@ jobs:
           sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" PKGBUILD
           sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" PKGBUILD.bin
           sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" aur/PKGBUILD
-          cd aur && makepkg --printsrcinfo > .SRCINFO
+      - name: Generate .SRCINFO
+        run: |
+          VERSION=${{ steps.bump.outputs.new_version }}
+          printf 'pkgbase = yt-transcriber\n' > aur/.SRCINFO
+          printf '\tpkgdesc = CLI tool to extract YouTube video transcripts with timestamps\n' >> aur/.SRCINFO
+          printf '\tpkgver = %s\n' "$VERSION" >> aur/.SRCINFO
+          printf '\tpkgrel = 1\n' >> aur/.SRCINFO
+          printf '\turl = https://github.com/Faeziix/yt-transcriber\n' >> aur/.SRCINFO
+          printf '\tinstall = yt-transcriber.install\n' >> aur/.SRCINFO
+          printf '\tarch = x86_64\n' >> aur/.SRCINFO
+          printf '\tarch = aarch64\n' >> aur/.SRCINFO
+          printf '\tlicense = MIT\n' >> aur/.SRCINFO
+          printf '\tmakedepends = rust\n' >> aur/.SRCINFO
+          printf '\tmakedepends = cargo\n' >> aur/.SRCINFO
+          printf '\tdepends = yt-dlp\n' >> aur/.SRCINFO
+          printf '\toptions = !debug\n' >> aur/.SRCINFO
+          printf '\tsource = yt-transcriber-%s.tar.gz::https://github.com/Faeziix/yt-transcriber/archive/v%s.tar.gz\n' "$VERSION" "$VERSION" >> aur/.SRCINFO
+          printf '\tsha256sums = SKIP\n' >> aur/.SRCINFO
+          printf '\npkgname = yt-transcriber\n' >> aur/.SRCINFO
       - name: Upload version files (uncommitted)
         uses: actions/upload-artifact@v4
         with:
