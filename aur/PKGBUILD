@@ -1,6 +1,6 @@
 # Maintainer: Faezix <faezix@github.com>
 pkgname=yt-transcriber
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="CLI tool to extract YouTube video transcripts with timestamps"
 arch=('x86_64' 'aarch64')
