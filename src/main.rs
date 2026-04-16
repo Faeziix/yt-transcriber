@@ -159,6 +159,16 @@ fn parse_vtt_timestamp(ts: &str) -> f64 {
     }
 }
 
+fn find_suffix_prefix_overlap(prev: &str, curr: &str) -> usize {
+    let max_overlap = prev.len().min(curr.len());
+    for len in (1..=max_overlap).rev() {
+        if curr.is_char_boundary(len) && prev.ends_with(&curr[..len]) {
+            return len;
+        }
+    }
+    0
+}
+
 fn deduplicate_segments(segments: Vec<TranscriptSegment>) -> Vec<TranscriptSegment> {
     if segments.is_empty() {
         return segments;
@@ -171,6 +181,12 @@ fn deduplicate_segments(segments: Vec<TranscriptSegment>) -> Vec<TranscriptSegme
             let last_text = last.text.trim();
             let curr_text = seg.text.trim();
 
+            if last_text == curr_text || last_text.contains(curr_text) {
+                last.end_seconds = seg.end_seconds;
+                last.duration_seconds = last.end_seconds - last.start_seconds;
+                continue;
+            }
+
             if curr_text.contains(last_text) {
                 last.text = curr_text.to_string();
                 last.end_seconds = seg.end_seconds;
@@ -178,13 +194,21 @@ fn deduplicate_segments(segments: Vec<TranscriptSegment>) -> Vec<TranscriptSegme
                 continue;
             }
 
-            if last_text.contains(curr_text) {
-                continue;
-            }
-
-            if last_text == curr_text {
-                last.end_seconds = seg.end_seconds;
-                last.duration_seconds = last.end_seconds - last.start_seconds;
+            let overlap = find_suffix_prefix_overlap(last_text, curr_text);
+            if overlap > 0 {
+                let new_part = curr_text[overlap..].trim_start().to_string();
+                if new_part.is_empty() {
+                    last.end_seconds = seg.end_seconds;
+                    last.duration_seconds = last.end_seconds - last.start_seconds;
+                    continue;
+                }
+                result.push(TranscriptSegment {
+                    index: 0,
+                    text: new_part,
+                    start_seconds: seg.start_seconds,
+                    end_seconds: seg.end_seconds,
+                    duration_seconds: seg.duration_seconds,
+                });
                 continue;
             }
         }
