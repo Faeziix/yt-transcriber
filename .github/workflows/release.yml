@@ -96,6 +96,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: version-files
+          include-hidden-files: true
           path: |
             Cargo.toml
             Cargo.lock
