@@ -14,10 +14,12 @@ jobs:
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
       - name: Install cargo-bump
         run: cargo install cargo-bump --locked
       - name: Calculate version bump
@@ -47,6 +49,7 @@ jobs:
           sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" PKGBUILD
           sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" PKGBUILD.bin
           sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" aur/PKGBUILD
+          sed -i "s/pkgver=.*/pkgver=${{ steps.bump.outputs.new_version }}/" aur-bin/PKGBUILD
       - name: Generate .SRCINFO
         run: |
           VERSION=${{ steps.bump.outputs.new_version }}
@@ -66,8 +69,31 @@ jobs:
           printf '\tsource = yt-transcriber-%s.tar.gz::https://github.com/Faeziix/yt-transcriber/archive/v%s.tar.gz\n' "$VERSION" "$VERSION" >> aur/.SRCINFO
           printf '\tsha256sums = SKIP\n' >> aur/.SRCINFO
           printf '\npkgname = yt-transcriber\n' >> aur/.SRCINFO
+      - name: Generate .SRCINFO for bin package
+        run: |
+          VERSION=${{ steps.bump.outputs.new_version }}
+          printf 'pkgbase = yt-transcriber-bin\n' > aur-bin/.SRCINFO
+          printf '\tpkgdesc = CLI tool to extract YouTube video transcripts with timestamps\n' >> aur-bin/.SRCINFO
+          printf '\tpkgver = %s\n' "$VERSION" >> aur-bin/.SRCINFO
+          printf '\tpkgrel = 1\n' >> aur-bin/.SRCINFO
+          printf '\turl = https://github.com/Faeziix/yt-transcriber\n' >> aur-bin/.SRCINFO
+          printf '\tinstall = yt-transcriber.install\n' >> aur-bin/.SRCINFO
+          printf '\tarch = x86_64\n' >> aur-bin/.SRCINFO
+          printf '\tarch = aarch64\n' >> aur-bin/.SRCINFO
+          printf '\tlicense = MIT\n' >> aur-bin/.SRCINFO
+          printf '\tdepends = yt-dlp\n' >> aur-bin/.SRCINFO
+          printf '\tprovides = yt-transcriber\n' >> aur-bin/.SRCINFO
+          printf '\tconflicts = yt-transcriber\n' >> aur-bin/.SRCINFO
+          printf '\toptions = !debug\n' >> aur-bin/.SRCINFO
+          printf '\tsource = LICENSE::https://raw.githubusercontent.com/Faeziix/yt-transcriber/v%s/LICENSE\n' "$VERSION" >> aur-bin/.SRCINFO
+          printf '\tsha256sums = SKIP\n' >> aur-bin/.SRCINFO
+          printf '\tsource_x86_64 = https://github.com/Faeziix/yt-transcriber/releases/download/v%s/yt-transcriber-linux-x86_64.tar.gz\n' "$VERSION" >> aur-bin/.SRCINFO
+          printf '\tsha256sums_x86_64 = SKIP\n' >> aur-bin/.SRCINFO
+          printf '\tsource_aarch64 = https://github.com/Faeziix/yt-transcriber/releases/download/v%s/yt-transcriber-linux-aarch64.tar.gz\n' "$VERSION" >> aur-bin/.SRCINFO
+          printf '\tsha256sums_aarch64 = SKIP\n' >> aur-bin/.SRCINFO
+          printf '\npkgname = yt-transcriber-bin\n' >> aur-bin/.SRCINFO
       - name: Upload version files (uncommitted)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: version-files
           path: |
@@ -76,6 +102,7 @@ jobs:
             PKGBUILD
             PKGBUILD.bin
             aur/
+            aur-bin/
 
   build:
     needs: [version]
@@ -85,10 +112,10 @@ jobs:
         os: [linux]
         arch: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: version-files
           path: .
@@ -105,7 +132,7 @@ jobs:
       - name: Generate checksum
         run: sha256sum yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.tar.gz > yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}.sha256
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: yt-transcriber-${{ matrix.os }}-${{ matrix.arch }}
           path: |
@@ -116,26 +143,27 @@ jobs:
     needs: [version, build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: artifacts
       - name: Restore version files from successful build
         run: |
-          mkdir -p aur
+          mkdir -p aur aur-bin
           cp artifacts/version-files/Cargo.toml .
           cp artifacts/version-files/Cargo.lock .
           cp artifacts/version-files/PKGBUILD .
           cp artifacts/version-files/PKGBUILD.bin .
           cp -r artifacts/version-files/aur/* aur/
+          cp -r artifacts/version-files/aur-bin/* aur-bin/
       - name: Commit version bump and create tag
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git add Cargo.toml Cargo.lock PKGBUILD PKGBUILD.bin aur/
+          git add Cargo.toml Cargo.lock PKGBUILD PKGBUILD.bin aur/ aur-bin/
           git commit -m "chore: bump version to v${{ needs.version.outputs.new_version }} [skip ci]" || echo "No changes to commit"
           git tag "v${{ needs.version.outputs.new_version }}" -f
           git push origin main
@@ -149,11 +177,50 @@ jobs:
           chmod 600 ~/.ssh/aur
           ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur"
-          git clone ssh://aur@aur.archlinux.org/yt-transcriber.git aur-repo
-          cp artifacts/version-files/aur/PKGBUILD aur-repo/
-          cp artifacts/version-files/aur/.SRCINFO aur-repo/
-          cp artifacts/version-files/aur/yt-transcriber.install aur-repo/
-          cd aur-repo
+          rm -rf aur-repo
+          if git clone ssh://aur@aur.archlinux.org/yt-transcriber.git aur-repo 2>&1; then
+            echo "Cloned existing AUR repo"
+            cp artifacts/version-files/aur/PKGBUILD aur-repo/
+            cp artifacts/version-files/aur/.SRCINFO aur-repo/
+            cp artifacts/version-files/aur/yt-transcriber.install aur-repo/
+            cd aur-repo
+          else
+            echo "Creating new AUR repo"
+            mkdir aur-repo
+            cp artifacts/version-files/aur/PKGBUILD aur-repo/
+            cp artifacts/version-files/aur/.SRCINFO aur-repo/
+            cp artifacts/version-files/aur/yt-transcriber.install aur-repo/
+            cd aur-repo
+            git init
+            git remote add origin ssh://aur@aur.archlinux.org/yt-transcriber.git
+          fi
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add PKGBUILD .SRCINFO yt-transcriber.install
+          git commit -m "Update to v${{ needs.version.outputs.new_version }}" || echo "No changes to commit"
+          git push origin master
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+      - name: Push to AUR (bin)
+        run: |
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur"
+          rm -rf aur-bin-repo
+          if git clone ssh://aur@aur.archlinux.org/yt-transcriber-bin.git aur-bin-repo 2>&1; then
+            echo "Cloned existing AUR repo"
+            cp artifacts/version-files/aur-bin/PKGBUILD aur-bin-repo/
+            cp artifacts/version-files/aur-bin/.SRCINFO aur-bin-repo/
+            cp artifacts/version-files/aur-bin/yt-transcriber.install aur-bin-repo/
+            cd aur-bin-repo
+          else
+            echo "Creating new AUR repo"
+            mkdir aur-bin-repo
+            cp artifacts/version-files/aur-bin/PKGBUILD aur-bin-repo/
+            cp artifacts/version-files/aur-bin/.SRCINFO aur-bin-repo/
+            cp artifacts/version-files/aur-bin/yt-transcriber.install aur-bin-repo/
+            cd aur-bin-repo
+            git init
+            git remote add origin ssh://aur@aur.archlinux.org/yt-transcriber-bin.git
+          fi
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
           git add PKGBUILD .SRCINFO yt-transcriber.install

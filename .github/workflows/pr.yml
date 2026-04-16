@@ -7,8 +7,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
       - name: Build binary
         run: cargo build --release
       - name: Create tarball
@@ -18,7 +20,7 @@ jobs:
       - name: Generate checksum
         run: sha256sum yt-transcriber-linux-x86_64.tar.gz > yt-transcriber-linux-x86_64.sha256
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: yt-transcriber-linux-x86_64
           path: |
